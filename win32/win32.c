@@ -5286,6 +5286,30 @@ rb_w32_write(int fd, const void *buf, size_t size)
     return ret;
 }
 
+long
+rb_w32_write_console(VALUE str, int fd)
+{
+    static int disable;
+    HANDLE handle;
+    DWORD dwMode, reslen;
+
+    if (disable) return -1L;
+    handle = (HANDLE)_osfhnd(fd);
+    if (!GetConsoleMode(handle, &dwMode) ||
+	!rb_econv_has_convpath_p(rb_enc_name(rb_enc_get(str)), "UTF-16LE"))
+	return -1L;
+
+    str = rb_str_encode(str, rb_enc_from_encoding(rb_enc_find("UTF-16LE")), 0,
+			Qnil);
+    if (!WriteConsoleW(handle, (LPWSTR)RSTRING_PTR(str), RSTRING_LEN(str)/2,
+		       &reslen, NULL)) {
+	if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
+	    disable = TRUE;
+	return -1L;
+    }
+    return (long)reslen;
+}
+
 static int
 unixtime_to_filetime(time_t time, FILETIME *ft)
 {
@@ -5552,11 +5576,13 @@ rb_w32_uchmod(const char *path, int mode)
 int
 rb_w32_isatty(int fd)
 {
+    DWORD mode;
+
     // validate fd by using _get_osfhandle() because we cannot access _nhandle
     if (_get_osfhandle(fd) == -1) {
 	return 0;
     }
-    if (!(_osfile(fd) & FDEV)) {
+    if (!GetConsoleMode((HANDLE)_osfhnd(fd), &mode)) {
 	errno = ENOTTY;
 	return 0;
     }

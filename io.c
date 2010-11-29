@@ -145,13 +145,12 @@ struct timeval rb_time_interval(VALUE);
 
 struct argf {
     VALUE filename, current_file;
-    int last_lineno;		/* $. */
-    int lineno;
-    int init_p, next_p;
+    long last_lineno;		/* $. */
+    long lineno;
     VALUE argv;
     char *inplace;
-    int binmode;
     struct rb_io_enc_t encs;
+    char init_p, next_p, binmode;
 };
 
 static int max_file_descriptor = NOFILE;
@@ -961,6 +960,10 @@ do_writeconv(VALUE str, rb_io_t *fptr)
 static long
 io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
+#ifdef _WIN32
+    long len = rb_w32_write_console(str, fptr->fd);
+    if (len > 0) return len;
+#endif
     str = do_writeconv(str, fptr);
     return io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str),
 		       fptr, nosync);
@@ -6941,7 +6944,7 @@ static VALUE
 argf_getline(int argc, VALUE *argv, VALUE argf)
 {
     VALUE line;
-    int lineno = ARGF.lineno;
+    long lineno = ARGF.lineno;
 
   retry:
     if (!next_argv()) return Qnil;
@@ -7172,7 +7175,7 @@ rb_f_readlines(int argc, VALUE *argv, VALUE recv)
 static VALUE
 argf_readlines(int argc, VALUE *argv, VALUE argf)
 {
-    int lineno = ARGF.lineno;
+    long lineno = ARGF.lineno;
     VALUE lines, ary;
 
     ary = rb_ary_new();

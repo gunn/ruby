@@ -274,7 +274,7 @@ void rb_objspace_free(struct rb_objspace *);
 typedef struct rb_vm_struct {
     VALUE self;
 
-    rb_thread_lock_t global_vm_lock;
+    rb_global_vm_lock_t gvl;
 
     struct rb_thread_struct *main_thread;
     struct rb_thread_struct *running_thread;
@@ -639,6 +639,7 @@ VALUE rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 			int argc, const VALUE *argv, const rb_block_t *blockptr);
 VALUE rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
 VALUE rb_vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
+void rb_vm_gvl_destroy(rb_vm_t *vm);
 
 void rb_thread_start_timer_thread(void);
 void rb_thread_stop_timer_thread(void);

@@ -11,6 +11,7 @@
 #include "addr2line.h"
 
 #include <stdio.h>
+#include <errno.h>
 
 #ifdef __ELF__
 
@@ -542,4 +543,6 @@ rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
     free(lines);
 }
 
-#endif /* defined(__ELF__) */
+#else /* defined(__ELF__) */
+#error not supported
+#endif
